@@ -60,6 +60,10 @@ class LocationsViewController: UIViewController, UITableViewDelegate, UITableVie
         let lngString = "\(lng)"
 
         print(latString + " " + lngString)
+        self.delegate?.locationsPickedLocation(controller: self, latitude: lat, longitude: lng)
+        self.navigationController?.popViewController(animated: true)
+        
+        
     }
     
     func searchBar(_ searchBar: UISearchBar, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {

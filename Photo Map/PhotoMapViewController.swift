@@ -9,9 +9,9 @@
 import UIKit
 import MapKit
 
-class PhotoMapViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+class PhotoMapViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate, LocationsViewControllerDelegate, MKMapViewDelegate{
     
-    
+    var myPhoto : UIImage!
     @IBOutlet weak var mapView: MKMapView!
     
     @IBAction func cameraButton(_ sender: UIButton) {
@@ -38,11 +38,12 @@ class PhotoMapViewController: UIViewController, UIImagePickerControllerDelegate,
         let editedImage = info[UIImagePickerControllerEditedImage] as! UIImage
         
         // Do something with the images (based on your use case)
+        myPhoto = originalImage
         
         // Dismiss UIImagePickerController to go back to your original view controller
         dismiss(animated: true, completion: nil)
         
-        performSegue(withIdentifier: "tagSegue", sender: nil)
+        performSegue(withIdentifier: "tagSegue", sender: self)
     }
 
     
@@ -68,7 +69,55 @@ class PhotoMapViewController: UIViewController, UIImagePickerControllerDelegate,
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         // Get the new view controller using segue.destinationViewController.
         // Pass the selected object to the new view controller.
+        if let locations = segue.destination as? LocationsViewController{
+            locations.delegate = self as? LocationsViewControllerDelegate
+        }
+    
+    }
+   
+//another way to implement
+    //extension PhotoMapViewController: LocationsViewControllerDelegate{...}
+
+    func locationsPickedLocation(controller: LocationsViewController, latitude: NSNumber, longitude: NSNumber){
+        print("latitude\(latitude) longitude\(longitude)")
+       // let locationCoordinate = CLLocationCoordinate2DMake(CLLocationDegrees(latitude), CLLocationDegrees(longitude))
+        
+        let annotation = PhotoAnnotation()
+        annotation.coordinate = CLLocationCoordinate2DMake(CLLocationDegrees(latitude), CLLocationDegrees(longitude))
+
+        mapView.addAnnotation(annotation)
+    }
+
+
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+    let reuseID = "myAnnotationView"
+    
+    var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: reuseID)
+    
+    let resizeRenderImageView = UIImageView(frame: CGRect(x : 0, y : 0, width : 45, height :45))
+    resizeRenderImageView.layer.borderColor = UIColor.white.cgColor
+    resizeRenderImageView.layer.borderWidth = 3.0
+    resizeRenderImageView.contentMode = UIViewContentMode.scaleAspectFill
+    resizeRenderImageView.image = (annotation as? PhotoAnnotation)?.photo
+    
+    UIGraphicsBeginImageContext(resizeRenderImageView.frame.size)
+    resizeRenderImageView.layer.render(in: UIGraphicsGetCurrentContext()!)
+    let thumbnail = UIGraphicsGetImageFromCurrentImageContext()
+    //UIGraphicsEndImageContext()
+
+    if (annotationView == nil) {
+        annotationView = MKPinAnnotationView(annotation: annotation as? PhotoAnnotation, reuseIdentifier: reuseID)
+        annotationView!.canShowCallout = true
+        annotationView!.leftCalloutAccessoryView = UIImageView(frame: CGRect(x:0, y:0, width: 50, height:50))
+        annotationView!.rightCalloutAccessoryView = UIButton(type: UIButtonType.detailDisclosure)
     }
     
+    let imageView = annotationView?.leftCalloutAccessoryView as! UIImageView
+    imageView.image = thumbnail //UIImage(named: "camera")
     
+    UIGraphicsEndImageContext()
+    
+    return annotationView
+  }
+
 }
